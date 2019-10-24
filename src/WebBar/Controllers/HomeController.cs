@@ -2,10 +2,14 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 using WebBar.Models;
 
 namespace WebBar.Controllers
@@ -27,6 +31,21 @@ namespace WebBar.Controllers
         [Authorize]
         public IActionResult Privacy()
         {
+            var accessToken = HttpContext.GetTokenAsync("access_token").Result;
+            var refreshToken = HttpContext.GetTokenAsync("refresh_token").Result;
+            var idToken = HttpContext.GetTokenAsync("id_token").Result;
+
+            var api = "http://localhost:5003/api/values";
+
+            using (var client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                var content = client.GetStringAsync(api).Result;
+                ViewBag.Json = JArray.Parse(content).ToString();
+            }
+
+            TempData["token"] = $"access_token: {accessToken} - Retorno da api: {ViewBag.Json}";
+
             return View();
         }
 

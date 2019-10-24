@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -22,6 +23,33 @@ namespace WebFoo
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            // Add Authentication services
+            services.AddAuthentication(options =>
+            {
+                options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = "oidc";
+            })
+            .AddCookie(options =>
+            {
+                options.ExpireTimeSpan = TimeSpan.FromMinutes(20);
+                options.Cookie.Name = "mvc.hybrid";
+            })
+            .AddOpenIdConnect("oidc", options =>
+            {
+                options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.Authority = "http://localhost:5005";
+                options.SignedOutRedirectUri = "http://localhost:5001";
+                options.ClientId = "foo";
+                options.ClientSecret = "secret";
+                options.ResponseType = "code id_token";
+                options.SaveTokens = true;
+                options.GetClaimsFromUserInfoEndpoint = false;
+                options.RequireHttpsMetadata = false;
+                options.Scope.Add("openid");
+                options.Scope.Add("profile");
+                options.Scope.Add("email");
+            });
+
             services.AddControllersWithViews();
         }
 
@@ -40,6 +68,7 @@ namespace WebFoo
 
             app.UseRouting();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>

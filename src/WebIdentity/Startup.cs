@@ -12,6 +12,7 @@ using WebIdentity.Data;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System.Reflection;
 
 namespace WebIdentity
 {
@@ -30,8 +31,54 @@ namespace WebIdentity
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
 
-            services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
-                .AddEntityFrameworkStores<ApplicationDbContext>();
+            services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = false)
+                .AddRoles<IdentityRole>()
+                .AddEntityFrameworkStores<ApplicationDbContext>()
+                .AddDefaultUI() //UIFramework.Bootstrap4
+                .AddDefaultTokenProviders();
+
+            // Adds IdentityServer
+            //var connectionString = Configuration.GetConnectionString("DefaultConnection");
+            //var migrationsAssembly = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
+
+            services.AddIdentityServer(options =>
+            {
+                options.Events.RaiseErrorEvents = true;
+                options.Events.RaiseInformationEvents = true;
+                options.Events.RaiseFailureEvents = true;
+                options.Events.RaiseSuccessEvents = true;
+
+                //options.IssuerUri = "null";
+                options.Authentication.CookieLifetime = TimeSpan.FromMinutes(20);
+            })
+            .AddInMemoryClients(Seed.GetClients())
+            .AddInMemoryApiResources(Seed.GetApiResources())
+            .AddInMemoryIdentityResources(Seed.GetIdentityResources())
+            .AddDeveloperSigningCredential()
+            //.AddCustomTokenRequestValidator<CustomTokenRequestValidator>()
+            //.AddResourceOwnerValidator<ResourceOwnerPassword>()
+            //.AddProfileService<ProfileDataService>()
+            .AddAspNetIdentity<IdentityUser>();
+            //.AddConfigurationStore(options =>
+            //{
+            //    options.ConfigureDbContext = builder => builder.UseSqlServer(connectionString,
+            //        sqlServerOptionsAction: sqlOptions =>
+            //        {
+            //            sqlOptions.MigrationsAssembly(migrationsAssembly);
+            //            //Configuring Connection Resiliency: https://docs.microsoft.com/en-us/ef/core/miscellaneous/connection-resiliency 
+            //            sqlOptions.EnableRetryOnFailure(maxRetryCount: 15, maxRetryDelay: TimeSpan.FromSeconds(30), errorNumbersToAdd: null);
+            //        });
+            //})
+            //.AddOperationalStore(options =>
+            //{
+            //    options.ConfigureDbContext = builder => builder.UseSqlServer(connectionString,
+            //        sqlServerOptionsAction: sqlOptions =>
+            //        {
+            //            sqlOptions.MigrationsAssembly(migrationsAssembly);
+            //            //Configuring Connection Resiliency: https://docs.microsoft.com/en-us/ef/core/miscellaneous/connection-resiliency 
+            //            sqlOptions.EnableRetryOnFailure(maxRetryCount: 15, maxRetryDelay: TimeSpan.FromSeconds(30), errorNumbersToAdd: null);
+            //        });
+            //});
 
             services.AddControllersWithViews();
             services.AddRazorPages();
@@ -51,12 +98,13 @@ namespace WebIdentity
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
+
             //app.UseHttpsRedirection();
             app.UseStaticFiles();
 
             app.UseRouting();
 
-            app.UseAuthentication();
+            app.UseIdentityServer();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
