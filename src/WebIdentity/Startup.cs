@@ -13,6 +13,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Reflection;
+using IdentityServer4.Services;
+using WebIdentity.Extensions.ProfileService;
 
 namespace WebIdentity
 {
@@ -82,6 +84,8 @@ namespace WebIdentity
 
             services.AddControllersWithViews();
             services.AddRazorPages();
+
+            services.AddTransient<IProfileService, ProfileDataService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

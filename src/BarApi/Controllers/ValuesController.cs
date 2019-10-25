@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace BarApi.Controllers
 {
-    //[Authorize(Roles = "Admin,Identity")]
+    [Authorize(Roles = "Admin")]
     [Route("api/[controller]")]
     [ApiController]
     public class ValuesController : ControllerBase
